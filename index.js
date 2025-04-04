@@ -279,22 +279,22 @@ async function postAd(sending, receiving) {
 
   console.log(reqBody);
 
-  fetch(`https://api.rolimons.com/tradeads/v1/createad`, {
+  fetch("https://api.rolimons.com/tradeads/v1/createad", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
       "cookie": `_RoliVerification=${rolimonsToken}`
-    }
+    }, // <-- Note the comma here!
     body: JSON.stringify(reqBody)
   })
-    .then((res) => res.json())
-    .then((json) => {
-      console.log(json);
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+  .then(res => res.json())
+  .then(json => {
+    console.log(json);
+  })
+  .catch(err => {
+    console.log(err);
+  });
 
   setTimeout(function () {
     getValues();
