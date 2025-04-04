@@ -6,64 +6,67 @@ Open source and completely free. THIS IS NOT TO ABUSE THE SITE ROLIMONS.COM!
 Please don't spam unrealistic trades lowering the trade quality, it doesnt help you or other users!
 */
 
-var app = require("express")() //this is for hosting the api and putting it on uptimerobot. This helps if your server provider is bad and you want your bot to stay up.
-app.use(require("body-parser").json())
+var app = require("express")(); // For hosting the API and uptime monitoring
+app.use(require("body-parser").json());
 
-const dotenv = require('dotenv') //used for reading the sercret from env. Since some hosting providers require you to have it public, this provides a safe environment keeping everything safe.
-dotenv.config()
+const dotenv = require('dotenv'); // Used for safely loading secrets from environment variables
+dotenv.config();
 
 const fetch = require("node-fetch");
 
-const rolimonsToken = process.env.token //gets rolimons verification token from environment
-const robloxId = process.env.robloxId //gets roblox verification token from environment. I put it here since some people would like to keep their profiles private
-const config = require("./config.json"); //gets your configuration
+const rolimonsToken = process.env.token; // ROLIMONS verification token from environment
+const robloxId = process.env.robloxId;   // Roblox ID from environment
+const config = require("./config.json");  // Configuration file
 
-let itemValues = {}; //item values. Format is "itemId": {"value": "5", "type": "3"}
-let playerInv = {}; //player current inv
-let onHold = []; //items on hold
+let itemValues = {}; // Format: "itemId": {"value": number, "type": number}
+let playerInv = {};  // Player's current inventory
+let onHold = [];     // Items on hold
 
-//function for getting item values from rolimons. This gets demand and value of the item.
+// Get item values from ROLIMONS, including demand and value
 async function getValues() {
-  await fetch(`https://api.rolimons.com/items/v1/itemdetails`, { //https request to get the item value and demand
+  await fetch(`https://api.rolimons.com/items/v1/itemdetails`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
     },
-  }).then((res) => res.json()).then((json) => {
-    for (const item in json.items) {
-      let type = json.items[item][5] >= 0 ? json.items[item][5] : 0;
-      itemValues[item] = { value: Math.abs(json.items[item][4]), type: type }; //assings the item values and demand
-    }
-    //console.log(itemValues)
-    getInv();
-  }).catch((err) => {
-    console.log(err);
-  });
+  })
+    .then((res) => res.json())
+    .then((json) => {
+      for (const item in json.items) {
+        let type = json.items[item][5] >= 0 ? json.items[item][5] : 0;
+        itemValues[item] = { value: Math.abs(json.items[item][4]), type: type };
+      }
+      // After getting the item values, fetch the inventory.
+      getInv();
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 }
 
-//function for getting your inventory and seeing items on hold.
+// Get the player's inventory and items on hold
 async function getInv() {
-  await fetch(`https://api.rolimons.com/players/v1/playerassets/${robloxId}`, { //function to get the user inventory
+  await fetch(`https://api.rolimons.com/players/v1/playerassets/${robloxId}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     },
-  }).then((res) => res.json()).then((json) => {
-    playerInv = json.playerAssets; //gets the players inv
-    onHold = json.holds; //assigns these items on hold
-    //console.log(playerInv);
-    //console.log(onHold);
-    generateAd();
-  }).catch((err) => {
-    console.log(err);
-  });
+  })
+    .then((res) => res.json())
+    .then((json) => {
+      playerInv = json.playerAssets;
+      onHold = json.holds;
+      generateAd();
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 }
 
-//algorithm to generate possible trade ads.
+// Find valid pairs of items whose combined value is within a specified range
 function findValidPairs(items, min, max) {
-  const validPairs = []; //possible pairs/items
-
+  const validPairs = [];
   for (let i = 0; i < items.length; i++) {
     for (let j = i + 1; j < items.length; j++) {
       const sum = items[i].value + items[j].value;
@@ -72,55 +75,71 @@ function findValidPairs(items, min, max) {
       }
     }
   }
-
   return validPairs;
 }
 
-//function to decide what items to put in the ad.
+// Generate a trade ad based on available inventory and configured parameters
 function generateAd() {
   let availableItems = [];
+  // Loop through the player's inventory. Check that itemValues exists for the asset.
   for (const asset in playerInv) {
+    if (!itemValues[asset]) continue; // Skip if itemValues for this asset is undefined
     for (const uaid of playerInv[asset]) {
-      if (!onHold.includes(uaid) && itemValues[asset].value >= config.minItemValue && config.maxItemValue >= itemValues[asset].value && !config.sendBlacklist.includes(`${asset}`)) {
+      if (
+        !onHold.includes(uaid) &&
+        itemValues[asset].value >= config.minItemValue &&
+        config.maxItemValue >= itemValues[asset].value &&
+        !config.sendBlacklist.includes(`${asset}`)
+      ) {
         availableItems.push(asset);
       }
     }
   }
 
-  //console.log("availableItems", availableItems);
-
-  let sendingSideNum = Math.floor(Math.random() * (config.maxItemsSend - config.minItemsSend + 1)) + config.minItemsSend;
-  //console.log("Total Sending Side", sendingSideNum);
-  let sendingSide = [];
-  for (let i = 0; i < sendingSideNum; i++) {
-    let item = availableItems[Math.floor(Math.random() * availableItems.length)];
-    sendingSide.push(parseFloat(item));
-    availableItems.splice(availableItems.indexOf(item), 1);
+  if (availableItems.length === 0) {
+    console.log("No available items found.");
+    return;
   }
 
-  //console.log("sending Items", sendingSide);
+  // Determine how many items to send
+  let sendingSideNum =
+    Math.floor(Math.random() * (config.maxItemsSend - config.minItemsSend + 1)) +
+    config.minItemsSend;
+  let sendingSide = [];
+  for (let i = 0; i < sendingSideNum && availableItems.length > 0; i++) {
+    let randomIndex = Math.floor(Math.random() * availableItems.length);
+    let item = availableItems[randomIndex];
+    sendingSide.push(parseFloat(item));
+    availableItems.splice(randomIndex, 1);
+  }
 
   if (config.smartAlgo) {
     let receivingSide = [];
     let totalSendValue = 0;
     for (const item of sendingSide) {
-      totalSendValue = totalSendValue + itemValues[item].value;
+      if (itemValues[item]) {
+        totalSendValue += itemValues[item].value;
+      }
     }
-    //console.log("Total Send Value", totalSendValue);
     let upgOrDown = Math.floor(Math.random() * 2);
-    if (upgOrDown == 1) {
+    if (upgOrDown === 1) {
       let requestValue = totalSendValue * (1 - config.RequestPercent / 100);
       let options = [];
       for (const item in itemValues) {
-        if (itemValues[item].value >= requestValue && itemValues[item].value <= totalSendValue && itemValues[item].type >= config.minDemand && !sendingSide.includes(parseFloat(item))) {
+        if (
+          itemValues[item].value >= requestValue &&
+          itemValues[item].value <= totalSendValue &&
+          itemValues[item].type >= config.minDemand &&
+          !sendingSide.includes(parseFloat(item))
+        ) {
           options.push(item);
         }
       }
 
       if (options.length >= 1) {
-        let item = options[Math.floor(Math.random(options.length))];
-        //console.log("upgrade Item", item);
-        receivingSide.push(parseFloat(item));
+        // Fixed random selection: using Math.random() * options.length
+        let selectedItem = options[Math.floor(Math.random() * options.length)];
+        receivingSide.push(parseFloat(selectedItem));
         receivingSide.push("upgrade");
         receivingSide.push("adds");
         postAd(sendingSide, receivingSide);
@@ -132,28 +151,31 @@ function generateAd() {
             itemIdValArr.push({ id: item, value: itemValues[item].value });
           }
         }
-        //console.log(itemIdValArr);
-        let validPairs = findValidPairs(itemIdValArr, totalSendValue * (1 - config.RequestPercent / 100), totalSendValue);
+        let validPairs = findValidPairs(
+          itemIdValArr,
+          totalSendValue * (1 - config.RequestPercent / 100),
+          totalSendValue
+        );
         if (validPairs.length > 0) {
-          const randomPair = validPairs[Math.floor(Math.random() * validPairs.length)];
+          const randomPair =
+            validPairs[Math.floor(Math.random() * validPairs.length)];
           const ids = randomPair.map((item) => item.id);
-          //console.log(ids);
           for (const id of ids) {
             receivingSide.push(parseFloat(id));
           }
-          let maxRValue = 0
-          let maxSValue = 0
+          let maxRValue = 0;
+          let maxSValue = 0;
           for (const item of receivingSide) {
-            if (typeof item === 'number') {
-              if (parseFloat(itemValues[`${item}`].value) > maxRValue) {
-                maxRValue = itemValues[`${item}`].value
+            if (typeof item === "number" && itemValues[item]) {
+              if (parseFloat(itemValues[item].value) > maxRValue) {
+                maxRValue = itemValues[item].value;
               }
             }
           }
           for (const item of sendingSide) {
-            if (typeof item === 'number') {
-              if (parseFloat(itemValues[`${item}`].value) > maxSValue) {
-                maxSValue = itemValues[`${item}`].value
+            if (typeof item === "number" && itemValues[item]) {
+              if (parseFloat(itemValues[item].value) > maxSValue) {
+                maxSValue = itemValues[item].value;
               }
             }
           }
@@ -169,6 +191,7 @@ function generateAd() {
         }
       }
     } else {
+      let receivingSide = [];
       receivingSide.push("adds");
       let itemIdValArr = [];
       for (const item in itemValues) {
@@ -176,32 +199,34 @@ function generateAd() {
           itemIdValArr.push({ id: item, value: itemValues[item].value });
         }
       }
-      //console.log(itemIdValArr);
-      let validPairs = findValidPairs(itemIdValArr, totalSendValue * (1 - config.RequestPercent / 100), totalSendValue);
+      let validPairs = findValidPairs(
+        itemIdValArr,
+        totalSendValue * (1 - config.RequestPercent / 100),
+        totalSendValue
+      );
       if (validPairs.length > 0) {
-        const randomPair = validPairs[Math.floor(Math.random() * validPairs.length)];
+        const randomPair =
+          validPairs[Math.floor(Math.random() * validPairs.length)];
         const ids = randomPair.map((item) => item.id);
-        //console.log(ids);
         for (const id of ids) {
           receivingSide.push(parseFloat(id));
         }
-        let maxRValue = 0
-        let maxSValue = 0
+        let maxRValue = 0;
+        let maxSValue = 0;
         for (const item of receivingSide) {
-          if (typeof item === 'number') {
-            if (parseFloat(itemValues[`${item}`].value) > maxRValue) {
-              maxRValue = itemValues[`${item}`].value
+          if (typeof item === "number" && itemValues[item]) {
+            if (parseFloat(itemValues[item].value) > maxRValue) {
+              maxRValue = itemValues[item].value;
             }
           }
         }
         for (const item of sendingSide) {
-          if (typeof item === 'number') {
-            if (parseFloat(itemValues[`${item}`].value) > maxSValue) {
-              maxSValue = itemValues[`${item}`].value
+          if (typeof item === "number" && itemValues[item]) {
+            if (parseFloat(itemValues[item].value) > maxSValue) {
+              maxSValue = itemValues[item].value;
             }
           }
         }
-
         if (maxSValue < maxRValue) {
           receivingSide.push("upgrade");
         } else {
@@ -214,16 +239,16 @@ function generateAd() {
       }
     }
   } else {
-    //adding manual item selection soon
+    // Manual item selection can be added soon
   }
 }
 
-//function for actually posting the trade ad
+// Post the trade ad to ROLIMONS
 async function postAd(sending, receiving) {
   let allRTags = [];
   let allRIds = [];
 
-  console.log("Giving:", sending, "requesting", receiving)
+  console.log("Giving:", sending, "requesting", receiving);
   for (const tag of receiving) {
     if (typeof tag === "string") {
       allRTags.push(tag);
@@ -233,9 +258,8 @@ async function postAd(sending, receiving) {
   }
 
   let seenStrings = new Set();
-
-  const result = allRTags.filter(item => {
-    if (typeof item === 'string') {
+  const result = allRTags.filter((item) => {
+    if (typeof item === "string") {
       if (seenStrings.has(item)) {
         return false;
       }
@@ -244,35 +268,37 @@ async function postAd(sending, receiving) {
     return true;
   });
 
-  /*{"player_id":55495469,"offer_item_ids":[382881237,2409285794,2409285794,362051899],"request_item_ids":[4390891467],"request_tags":["any","upgrade","downgrade"],"offer_robux":10000}*/
   let reqBody = {
-    "player_id": parseFloat(robloxId),
-    "offer_item_ids": sending,
-    "request_item_ids": allRIds,
-    "request_tags": result
+    player_id: parseFloat(robloxId),
+    offer_item_ids: sending,
+    request_item_ids: allRIds,
+    request_tags: result,
   };
-  console.log(reqBody)
+  console.log(reqBody);
 
   fetch(`https://api.rolimons.com/tradeads/v1/createad`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "cookie": `${rolimonsToken}`
+      cookie: `${rolimonsToken}`,
     },
     body: JSON.stringify(reqBody),
-  }).then((res) => res.json()).then((json) => {
-    console.log(json);
-  }).catch((err) => {
-    console.log(err);
-  });
+  })
+    .then((res) => res.json())
+    .then((json) => {
+      console.log(json);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
   setTimeout(function () {
     getValues();
-  }, 1560000); //you can change this timeout to every 24 mins. I did 26 mins so it doesnt overlap. Time is in milliseconds
+  }, 1560000); // Timeout in milliseconds (26 minutes)
 }
 
-getValues(); //calls values function, script will start from here
+getValues(); // Start the process
 
 app.get("/", (req, res) => {
-  res.json({ message: 'Trade ad bot is up and running!' }); //verifies trade ad bot is up and running
-})
-app.listen(8080) //port to use for the api.
+  res.json({ message: "Trade ad bot is up and running!" });
+});
+app.listen(8080);
