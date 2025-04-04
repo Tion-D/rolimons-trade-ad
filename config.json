@@ -3,7 +3,7 @@
   "minItemsToSend": 2,
   "maxItemsToSend": 4,
   "maxItemsToReceive": 2,
-  "excludeItems": [ "Playful Vampire" ],
+  "excludeItems": ["2409285794"],
   "minValueToSend": 4000,
   "maxValueToSend": 40000,
   "RequestPercent": 30,
