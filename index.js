@@ -9,18 +9,18 @@ Please don't spam unrealistic trades lowering the trade quality, it doesnt help 
 var app = require("express")(); // For hosting the API and uptime monitoring
 app.use(require("body-parser").json());
 
-const dotenv = require('dotenv'); // Used for safely loading secrets from environment variables
+const dotenv = require("dotenv"); // Used for safely loading secrets from environment variables
 dotenv.config();
 
 const fetch = require("node-fetch");
 
 const rolimonsToken = process.env.token; // ROLIMONS verification token from environment
-const robloxId = process.env.robloxId;   // Roblox ID from environment
-const config = require("./config.json");  // Configuration file
+const robloxId = process.env.robloxId; // Roblox ID from environment
+const config = require("./config.json"); // Configuration file
 
 let itemValues = {}; // Format: "itemId": {"value": number, "type": number}
-let playerInv = {};  // Player's current inventory
-let onHold = [];     // Items on hold
+let playerInv = {}; // Player's current inventory
+let onHold = []; // Items on hold
 
 // Get item values from ROLIMONS, including demand and value
 async function getValues() {
@@ -50,7 +50,8 @@ async function getInv() {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     },
   })
     .then((res) => res.json())
@@ -103,8 +104,9 @@ function generateAd() {
 
   // Determine how many items to send
   let sendingSideNum =
-    Math.floor(Math.random() * (config.maxItemsSend - config.minItemsSend + 1)) +
-    config.minItemsSend;
+    Math.floor(
+      Math.random() * (config.maxItemsSend - config.minItemsSend + 1)
+    ) + config.minItemsSend;
   let sendingSide = [];
   for (let i = 0; i < sendingSideNum && availableItems.length > 0; i++) {
     let randomIndex = Math.floor(Math.random() * availableItems.length);
@@ -137,8 +139,8 @@ function generateAd() {
       }
 
       if (options.length >= 1) {
-        // Fixed random selection: using Math.random() * options.length
-        let selectedItem = options[Math.floor(Math.random() * options.length)];
+        let selectedItem =
+          options[Math.floor(Math.random() * options.length)];
         receivingSide.push(parseFloat(selectedItem));
         receivingSide.push("upgrade");
         receivingSide.push("adds");
@@ -274,6 +276,7 @@ async function postAd(sending, receiving) {
     request_item_ids: allRIds,
     request_tags: result,
   };
+
   console.log(reqBody);
 
   fetch(`https://api.rolimons.com/tradeads/v1/createad`, {
@@ -281,8 +284,8 @@ async function postAd(sending, receiving) {
     headers: {
       "Content-Type": "application/json",
       cookie: `_Roliverification=${rolimonsToken}`
-    }
-    body: JSON.stringify(reqBody),
+    },
+    body: JSON.stringify(reqBody)
   })
     .then((res) => res.json())
     .then((json) => {
@@ -291,6 +294,7 @@ async function postAd(sending, receiving) {
     .catch((err) => {
       console.log(err);
     });
+
   setTimeout(function () {
     getValues();
   }, 1560000); // Timeout in milliseconds (26 minutes)
