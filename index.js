@@ -283,8 +283,9 @@ async function postAd(sending, receiving) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      cookie: `_RoliVerification=${rolimonsToken}`
-    },
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      "cookie": `_RoliVerification=${rolimonsToken}`
+    }
     body: JSON.stringify(reqBody)
   })
     .then((res) => res.json())
