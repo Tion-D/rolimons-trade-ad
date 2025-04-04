@@ -1,12 +1,10 @@
 {
+  "minItemValue": 4000,
+  "maxItemValue": 40000,
   "smartAlgo": true,
-  "minItemsToSend": 2,
-  "maxItemsToSend": 4,
-  "maxItemsToReceive": 2,
-  "excludeItems": ["2409285794"],
-  "minValueToSend": 4000,
-  "maxValueToSend": 40000,
-  "RequestPercent": 30,
-  "excludeRapOnly": true,
-  "minDemandRating": 2
+  "minItemsSend": 2,
+  "maxItemsSend": 4,
+  "sendBlacklist": ["2409285794"],
+  "RequestPercent": "30",
+  "minDemand": 2
 }
