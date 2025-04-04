@@ -298,7 +298,7 @@ async function postAd(sending, receiving) {
 
   setTimeout(function () {
     getValues();
-  }, 1560000); // Timeout in milliseconds (26 minutes)
+  }, 950000);
 }
 
 getValues(); // Start the process
