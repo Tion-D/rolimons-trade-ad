@@ -280,8 +280,8 @@ async function postAd(sending, receiving) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      cookie: `${rolimonsToken}`,
-    },
+      cookie: `_Roliverification=${rolimonsToken}`
+    }
     body: JSON.stringify(reqBody),
   })
     .then((res) => res.json())
