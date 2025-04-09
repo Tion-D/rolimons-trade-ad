@@ -81,6 +81,12 @@ function findValidPairs(items, min, max) {
 
 // Generate a trade ad based on available inventory and configured parameters
 function generateAd() {
+  if (config.manualOffer && config.manualRequest) {
+    console.log("Using manual override for trade ad:");
+    console.log("Offering:", config.manualOffer, "Requesting:", config.manualRequest);
+    postAd(config.manualOffer.map(Number), config.manualRequest.map(Number));
+    return;
+  }
   let availableItems = [];
   // Loop through the player's inventory. Check that itemValues exists for the asset.
   for (const asset in playerInv) {
