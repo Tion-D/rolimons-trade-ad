@@ -1,6 +1,13 @@
 {
-  "smartAlgo": false,
-  "manualOffer": ["553970606"],
-  "manualRequest": ["209995252"],
-  "_comment": "When smartAlgo is false and manualOffer/manualRequest are provided, the bot will post an ad using exactly these asset IDs."
+  "minItemValue": 1000,
+  "maxItemValue": 1000000,
+  "smartAlgo": true,
+   "_comment": "Available tags are 'any', 'upgrade', 'downgrade', 'rap', 'rares', 'demand', 'wishlist', 'robux', 'adds', 'projecteds'. You can leave empty for no tags at all. For smart algo, it determines if the item requested is an upgrade/downgrade. Do not add upgrade/downgrade tag with it.",
+  "maxItemsSend": 4,
+  "minItemsSend": 1,
+  "sendBlacklist": [""],
+  "RequestPercent": "20",
+  "_comment2": "This is for percent UNDER the actual value. For example, 200k, 20% under that is 160k, itll add items 160-200k.",
+  "minDemand": 2,
+  "_comment3": "0 = terrible, 1 = Low, 2 = Normal, 3 = High, 4 = Amazing"
 }
